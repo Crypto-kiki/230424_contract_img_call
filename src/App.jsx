@@ -6,6 +6,7 @@ import {
   NFT_ABI,
   NFT_ADDRESS,
 } from "./web3.config";
+import axios from "axios";
 
 const web3 = new Web3(window.ethereum);
 const contract = new web3.eth.Contract(CONTRACT_ABI, CONTRACT_ADDRESS);
@@ -17,6 +18,7 @@ function App() {
   const [name, setName] = useState();
   const [totalSupply, setTotalSupply] = useState();
   const [symbol, setSymbol] = useState();
+  const [nftMetadata, setNftMetadata] = useState();
 
   const onClickAccount = async () => {
     try {
@@ -80,9 +82,17 @@ function App() {
       if (!result.status) return;
 
       const balanceOf = await nftContract.methods.balanceOf(account).call();
-      console.log(balanceOf);
+      const tokenOfOwnerByIndex = await nftContract.methods
+        .tokenOfOwnerByIndex(account, parseInt(balanceOf) - 1)
+        .call();
 
-      console.log(result);
+      const tokenURI = await nftContract.methods
+        .tokenURI(tokenOfOwnerByIndex)
+        .call();
+
+      const response = await axios.get(tokenURI);
+
+      setNftMetadata(response.data);
     } catch (error) {
       console.error(error);
     }
@@ -115,6 +125,13 @@ function App() {
             </button>
           </div>
           <div className="flex items-center mt-4">
+            {nftMetadata && (
+              <div>
+                <img src={nftMetadata.image} alt="NFT" />
+                <div>Name : {nftMetadata.name}</div>
+                <div>Description : {nftMetadata.description}</div>
+              </div>
+            )}
             <button className="ml-2 btn-style" onClick={onClickMint}>
               민팅
             </button>
